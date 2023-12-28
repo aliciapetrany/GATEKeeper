@@ -259,6 +259,7 @@ class GATEKeeper:
                 outstr = '\t'.join(str(value) for value in row)
                 file.write(outstr)
             file.close()
+        self.vcf_df = vcf_df
 
     #top function for mst analysis
     def _run_mst(self):
