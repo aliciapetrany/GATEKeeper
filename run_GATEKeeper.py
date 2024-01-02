@@ -18,6 +18,9 @@ parser.add_argument("-m", "--metadata", dest="metadata_path", default="", help="
 parser.add_argument("-x", "--testmode", dest="testmode", action="store_true", help="Run time series valdiation")
 parser.add_argument("-l", "--seqlimit", dest="seqlimit", default=float("inf"), help="Cutoff on number of sequences to read in", type=int )
 parser.add_argument("-t", "--threads", dest="threads", default=8, help="Number of threads", type = int)
+parser.add_argument("-p", "--binpath", dest="binpath", default="bin/", help="GATEKeeper bin location", type = str)
+parser.add_argument("-verb", "--verbosity", dest="verbosity", default=2, help="Verbosity switch. 0=no output, 1=warnings only, 2=warnings and info", type = int)
+
 #Gatekeeper's arguments
 parser.add_argument("-idy", "--minidentity", dest="minidentity", default=70, help="Set the minimum sequence identity (0-100) of a local alignment", type=int)
 parser.add_argument("-slen", "--minslength", dest="minslength", default=15, help="Set the minimum seed length", type=int)
@@ -39,6 +42,8 @@ g.time_metadata_path = args.metadata_path
 g.test_mode = args.testmode
 g.seq_limit = args.seqlimit
 g.nthreads = args.threads
+g.bin_path = args.binpath
+g.verbosity = args.verbosity
 g.gatekeeper_args = [args.minidentity, args.minslength, args.minalength,
                      args.maxindel, args.clustersize, args.unique,
                      args.sensitive, args.dotplot]
