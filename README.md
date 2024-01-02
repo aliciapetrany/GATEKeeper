@@ -1,13 +1,11 @@
-### GATEKeeper
-This is a temporary repository for us to work on GATEKeeper
+# THIS PART OF THE README IS FOR THE GIRLIES AND WILL BE DELETED LATER <3
 
-## NOTES
-The core functionality of the pipeline is finished, but it still needs some minor work. TODOs are noted at the top of the GATEKeeperUtils file
+This is a temporary repository for us to work on GATEKeeper. The final respository will be on Yong's github. 
 
-## Usage
+### Usage
 This pipeline can be used from both the command line and within a python script. For both cases, you need to download it, cd into the GATEKeeper_complete directory, and run "make"
 
-## Command line usage
+### Command line usage
 It's kinda janky, so for it to work, you MUST be in the Gatekeeper_complete directory. Thats something we probably need to fix.  
 For an extended list of params, you can check run_GATEKeeper.py, I'm too lazy to type them all out so heres the short version of the usage:
 
@@ -25,7 +23,7 @@ The pipline also defaults with no VCF output, so if you want a vcf file run the 
 ```
 All outputs are written to the output_file folder :)
 
-## Python Usage
+### Python Usage
 I tried to make it easy.
 ```
 from GATEKeeperUtils import GATEKeeper
@@ -48,3 +46,7 @@ g.time_metadata_path = "../yee_haw.csv"
 g.test_mode = True
 g.run()
 ```
+# OK I'M DRAFTING THE REAL README NOW
+# GATEKeeper
+Gatekeeper defines phylogenetic relationships by performing pairwise alignments across all input sequences, then contructing a minimum spanning tree based on relative sequence similarities. 
+*** INSERT WORKFLOW IMAGE HERE ***
