@@ -5,10 +5,9 @@ from scipy.sparse.csgraph import minimum_spanning_tree
 import warnings
 from multiprocessing import Process, Manager
 import glob
-
+import sys
 
 # TODO
-# cytoscape output
 # arg checking
 class GATEKeeper:
 
@@ -22,7 +21,8 @@ class GATEKeeper:
     test_mode = False #If true, run time validation
     time_metadata_path = "" #path to ncbi file containing time info, does not need to be filtered
     gatekeeper_args = [70,15,200,25,200, False, False, False] #arguments to pass through to GATEKeeper, don't touch it <3
-
+    bin_path = "bin/" #path to bin within GATEKeeper directory
+    verbosity = 2 #2 = all warnings and prints, #1 = warnings only, #0 = no printing
     # initializes GATEKeeper object
     # params:
         # fasta_file_path = path to a fasta file containing target sequences, assuming root node is at root_pos
@@ -59,6 +59,8 @@ class GATEKeeper:
 
     # main control function for python component of GATEKeeper
     def run(self):
+        rerun = False
+        self.checkargs()
         self.seq_dict = self.load_sequences(self.fasta_file_path)
         self._mkdirs()
         # prevents redundant Gatekeeper calls
@@ -66,15 +68,22 @@ class GATEKeeper:
             # multiprocessed gatekeeper calls
             self._run_GATEKeeper()
         else:
-            with warnings.catch_warnings():
-                warnings.simplefilter("always")
-                warnings.warn(
-                    "Existing mutation matrix found. Skipping GATEKeeper calls. If This wasn't intended, please change trial name.")
+            if self.verbosity > 0:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("always")
+                    warnings.warn(
+                        "Existing mutation matrix found. Skipping GATEKeeper calls. If This wasn't intended, please change trial name.")
+            rerun = True
             self.adj_mat = np.loadtxt("output_files/mutation_matrix_" + self.trial_name + ".csv",
                                       delimiter=",")
 
         if self.vcf_level == 1 or self.vcf_level == 2:
-            self._output_vcf()
+            if rerun and os.path.exists("output_files/" + self.trial_name + ".vcf"):
+                self.vcf = np.genfromtxt("output_files/" + self.trial_name + ".vcf",
+                                        delimiter="\t",
+                                        dtype=str)
+            else:
+                self._output_vcf()
 
         self._run_mst()
 
@@ -82,6 +91,8 @@ class GATEKeeper:
             self._time_series_validation()
 
         self._write_outputs()
+        if self.verbosity >= 2:
+            print("GATEKeeper ran successfully. All output files are in the 'output_files/' directory")
 
     #makes temp file and output file directories
     def _mkdirs(self):
@@ -89,6 +100,27 @@ class GATEKeeper:
             os.makedirs("temp_files")
         if not os.path.exists("output_files"):
             os.makedirs("output_files")
+    def checkargs(self):
+        if not os.path.exists(self.fasta_file_path):
+            sys.exit("Provided fasta file does not exist.")
+        if type(self.trial_name) is not str:
+            sys.exit("Invalid trial name")
+        if self.root_pos < 0 or type(self.root_pos) is not int:
+            sys.exit("Invalid root position specified")
+        if self.nperms < 1 or type(self.nperms) is not int:
+            sys.exit("Invalid number of permutations")
+        if type(self.vcf_level) is not int:
+            sys.exit("VCF level must be an integer")
+        if self.vcf_level < 0 or self.vcf_level > 2:
+            sys.exit("Invalid VCF output level. vcf_level must fall between 0-2.")
+        if self.test_mode and not os.path.exists(self.time_metadata_path):
+            sys.exit("Path to time-containing metadata does not exist")
+        if self.seq_limit < 2 or type(self.seq_limit) is not int:
+            sys.exit("Invalid seq limit")
+        if self.nthreads < 1 or type(self.nthreads) is not int:
+            sys.exit("Invalid number of threads")
+        if not os.path.exists(self.bin_path):
+            sys.exit("Invalid bin path. Please provide path to the bin folder within the GATEKeeper directory")
 
     #top function facilitating GATEKeeper calls. Manages all threads.
     def _run_GATEKeeper(self):
@@ -187,7 +219,7 @@ class GATEKeeper:
     #params:
         #i/j, sequence positions in sequence dict
     def _gen_gatekeeper_command_string(self, i, j):
-        strl = ["bin/GATEkeeper",
+        strl = [self.bin_path + "GATEkeeper",
                 "-r", "temp_files/fa1_" + str(i) + "_" + str(j) + ".fa",
                 "-q", "temp_files/fa2_" + str(i) + "_" + str(j) + ".fa",
                 "-o", "temp_files/output_" + str(i) + "_" + str(j),
@@ -212,6 +244,7 @@ class GATEKeeper:
         d = sorted(d.items())
         d = [value for key, value in d]
         self.adj_mat = np.vstack(d)
+        self.adj_mat = self.adj_mat + np.transpose(self.adj_mat)
 
     #Manually reads in individual vcfs and compiles them
     def _output_vcf(self):
@@ -328,6 +361,14 @@ class GATEKeeper:
 
         self.time_series_df = time_series_df.iloc[1:]
 
+        n_success = len(self.time_series_df[self.time_series_df["Time_diff"] > 0])
+        n_zero = len(self.time_series_df[self.time_series_df["Time_diff"] == 0])
+        n_fail = len(self.time_series_df[self.time_series_df["Time_diff"] < 0])
+        n_total = len(self.time_series_df)
+
+        if self.verbosity >= 2:
+            print(f"Test Mode Results\nSuccesses: {n_success}\nFailures: {n_fail}\nZeros: {n_zero}\nSuccess Rate: {(n_success + n_zero)/n_total}\nFailure Rate: {n_fail/n_total}")
+
     #reads in the metadata file from the ncbi
     def _read_in_time_metadata(self, variant_labels):
         variant_labels = np.array([s[1:] for s in list(self.seq_dict.keys())])
@@ -339,13 +380,28 @@ class GATEKeeper:
                 self.time_dict[dates["Accession"].iloc[i]] = date.split("-")
 
     #writes outputs to output file
+    def format_cytoscape_output(self):
+        variant_labels = np.array([s[1:] for s in list(self.seq_dict.keys())])
+        hits = np.nonzero(self.mst)
+        cyto_df = pd.DataFrame({"Interactor 1": ["0"],
+                                "Interactor 2": ["0"],
+                                "Confidence": [0]})
+        for row, col, in zip(hits[0], hits[1]):
+            temp = pd.DataFrame({"Interactor 1": [variant_labels[row]],
+                                 "Interactor 2": [variant_labels[col]],
+                                 "Confidence": [self.mst[row, col]]})
+            cyto_df = pd.concat([cyto_df, temp])
+        cyto_df = cyto_df.iloc[1:]
+        self.interaction_df = cyto_df
     def _write_outputs(self):
+        self.format_cytoscape_output()
         np.savetxt(fname = "output_files/mutation_matrix_" + self.trial_name + ".csv",
                    X = self.adj_mat,
                    delimiter = ",")
         np.savetxt(fname = "output_files/minimum_spanning_tree_" + self.trial_name + ".csv",
                    X = self.mst,
                    delimiter = ",")
+        self.interaction_df.to_csv("output_files/cytoscape_output_" + self.trial_name + ".csv")
         if self.test_mode:
             self.time_series_df.to_csv("output_files/time_valdiation_results.csv",
                                        index = False)
