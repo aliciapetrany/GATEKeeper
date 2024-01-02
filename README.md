@@ -57,10 +57,46 @@ To install GATEKeeper, please run the following series of commands within a linu
 git clone https://github.com/aliciapetrany/GATEKeeper.git
 cd GATEKeeper
 make
-
+chmod +x run_GATEKeeper.py
+chmod +x bin/GATEkeeper
 ```
+## Requirements
+The following are required for the python portion of the pipeline to function:
+```
+numpy>=1.26.2
+pandas>=2.1.4
+scipy>=1.11.4
+```
+The following are required for the c++ portion of the pipeline to function:
+```
+```
+## Usages
+GATEKeeper is available for use under python and command line implementations. The full pipeline can be run from both python and the command line, however, single rapid pairwise alignments can only be run from the command line at this time.
 ### Python Usage
 All of GATEKeeper's python functionality is encompassed within the GATEKeeper class. Upon initialization, a path to a valid fasta file must be provided, then GATEKeeper must be run manually:
 ```
 from GATEKeeperUtils import GATEKeeper
+g = GATEKeeper("../Selected_1000_Genomes.fasta")
+g.run()
 ```
+GATEKeeper has optional attributes that can be adjusted with the following syntax prior to running it:
+```
+from GATEKeeperUtils import GATEKeeper
+g = GATEKeeper("../Selected_1000_Genomes.fasta")
+g.trial_name = "test_trial"
+g.vcf_level = 2
+g.run()
+```
+The exhaustive list of GATEKeeper attributes is as follows:  
+  - `trial_name` [string] The suffix to be added to each output file.
+  - `vcf_level` [int] The level of detail in vcf outputs. 0 = No VCF output, 1 = Root vs. all VCF output, and 2 = all vs. all VCF output. 
+  - `bin_path` [string] Path to the 'bin' directory within the GATEKeeper directory. Must change if working outside of the GATEKeeper directory
+  - `nperms` [int] The number of permutations run when resampling the minimum spanning tree
+  - `nthreads` [int] The number of threads to run GATEKeeper calls across
+  - `verbosity` [int] Level of verbosity in the output. 0 = No outputs, 1 = warnings only, 2 = warnings and messages
+  - `seq_limit` [int] The number of sequences to cut the alignments off at, if neceessary. If specified, GATKeeper will only read in 'seq_limit" number of sequences, then truncate the remaining sequences in the fasta file. 
+  - `root_pos` [int] Position of the root sequence in the fasta file, defaults to the first sequence. Only necessary if 'vcf_level' = 1, or if running GATEKeeper in test mode 
+  - `test_mode` [boolean] If true, runs time series validation of the final minimum spanning tree. For this mode to work properly, a 'root_pos' and 'time_metadata_path' must be properly defined
+  - `time_metadata_path` [string] Path to NCBI file containing information for each sequence. For more information about this file, please refer to the "Notes" section of this readme file.
+
+## Notes
