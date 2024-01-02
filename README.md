@@ -54,6 +54,9 @@ Gatekeeper defines phylogenetic relationships by performing pairwise alignments 
 ## Installation
 To install GATEKeeper, please run the following series of commands within a linux terminal:
 ```
+git clone https://github.com/aliciapetrany/GATEKeeper.git
+cd GATEKeeper
+make
 
 ```
 ### Python Usage
