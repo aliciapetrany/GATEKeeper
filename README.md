@@ -48,5 +48,16 @@ g.run()
 ```
 # OK I'M DRAFTING THE REAL README NOW
 # GATEKeeper
-Gatekeeper defines phylogenetic relationships by performing pairwise alignments across all input sequences, then contructing a minimum spanning tree based on relative sequence similarities. 
+Gatekeeper defines phylogenetic relationships by performing pairwise alignments across all input sequences, then contructing a minimum spanning tree based on relative sequence similarities. GATEKeeper is currently only available for linux based operating systems. 
 *** INSERT WORKFLOW IMAGE HERE ***
+
+## Installation
+To install GATEKeeper, please run the following series of commands within a linux terminal:
+```
+
+```
+### Python Usage
+All of GATEKeeper's python functionality is encompassed within the GATEKeeper class. Upon initialization, a path to a valid fasta file must be provided, then GATEKeeper must be run manually:
+```
+from GATEKeeperUtils import GATEKeeper
+```
