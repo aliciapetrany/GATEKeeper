@@ -115,7 +115,7 @@ class GATEKeeper:
             sys.exit("Invalid VCF output level. vcf_level must fall between 0-2.")
         if self.test_mode and not os.path.exists(self.time_metadata_path):
             sys.exit("Path to time-containing metadata does not exist")
-        if self.seq_limit < 2 or type(self.seq_limit) is not int:
+        if self.seq_limit < 2:
             sys.exit("Invalid seq limit")
         if self.nthreads < 1 or type(self.nthreads) is not int:
             sys.exit("Invalid number of threads")
