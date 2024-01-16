@@ -17,7 +17,7 @@ class GATEKeeper:
     trial_name = "1"  # Tag added to end of files to indicate different trials
     nperms = 1000  # number of permuations to run the mst resampling for
     nthreads = 8 #Number of threads to run parallelized GATEKeeper calls over
-    vcf_level = 2  # 2=allvall, 1 = root v all, 0 = no vcf output, note 2 does not produce standard vcf
+    vcf_level = 0  # 2=allvall, 1 = root v all, 0 = no vcf output, note 2 does not produce standard vcf
     test_mode = False #If true, run time validation
     time_metadata_path = "" #path to ncbi file containing time info, does not need to be filtered
     gatekeeper_args = [70,15,200,25,200, False, False, False] #arguments to pass through to GATEKeeper, don't touch it <3
@@ -330,8 +330,9 @@ class GATEKeeper:
         roots = [variant_labels[self.root_pos]]
         already_traversed = np.array([])
         flag = True
-
-        while 7 == 7:
+        maxiter = 10000
+        i = 0
+        while i < maxiter:
             for root in roots:
                 if root not in already_traversed:
                     root_pos = int(np.where(root == variant_labels)[0])  # get interactors with root
@@ -358,16 +359,17 @@ class GATEKeeper:
             if len(already_traversed) == len(variant_labels):  # exit condition
                 break
             roots = new_roots
+            i = i+1
 
         self.time_series_df = time_series_df.iloc[1:]
 
-        n_success = len(self.time_series_df[self.time_series_df["Time_diff"] > 0])
-        n_zero = len(self.time_series_df[self.time_series_df["Time_diff"] == 0])
-        n_fail = len(self.time_series_df[self.time_series_df["Time_diff"] < 0])
-        n_total = len(self.time_series_df)
+        self.n_success = len(self.time_series_df[self.time_series_df["Time_diff"] > 0])
+        self.n_zero = len(self.time_series_df[self.time_series_df["Time_diff"] == 0])
+        self.n_fail = len(self.time_series_df[self.time_series_df["Time_diff"] < 0])
+        self.n_total = len(self.time_series_df)
 
         if self.verbosity >= 2:
-            print(f"Test Mode Results\nSuccesses: {n_success}\nFailures: {n_fail}\nZeros: {n_zero}\nSuccess Rate: {(n_success + n_zero)/n_total}\nFailure Rate: {n_fail/n_total}")
+            print(f"Test Mode Results\nSuccesses: {self.n_success}\nFailures: {self.n_fail}\nZeros: {self.n_zero}\nSuccess Rate: {(self.n_success + self.n_zero)/self.n_total}\nFailure Rate: {self.n_fail/self.n_total}")
 
     #reads in the metadata file from the ncbi
     def _read_in_time_metadata(self, variant_labels):
