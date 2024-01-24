@@ -9,6 +9,24 @@ import sys
 
 # TODO
 # arg checking
+class Kruskal_UnionFind:
+    def __init__(self, vertices):
+        self.parent = {v: v for v in vertices}
+        self.rank = {v: 0 for v in vertices}
+
+    def find(self, v):
+        if self.parent[v] != v:
+            self.parent[v] = self.find(self.parent[v])
+        return self.parent[v]
+
+    def union(self, root1, root2):
+        if self.rank[root1] > self.rank[root2]:
+            self.parent[root2] = root1
+        elif self.rank[root1] < self.rank[root2]:
+            self.parent[root1] = root2
+        else:
+            self.parent[root2] = root1
+            self.rank[root1] += 1
 class GATEKeeper:
 
     #PARAMS
@@ -297,8 +315,36 @@ class GATEKeeper:
     #top function for mst analysis
     def _run_mst(self):
         self.similarity_matrix = self._resample_mst()
-        self.mst = minimum_spanning_tree(self.nperms * 2 - self.similarity_matrix).toarray().astype(int)
-        self.mst = np.where(self.mst != 0, self.similarity_matrix, 0) / self.nperms
+        s = self.similarity_matrix / self.nperms
+        graph = np.array([-1, -1, -1, -1])
+        nonzero = np.nonzero(s)
+        for i, j in zip(nonzero[0], nonzero[1]):
+            graph = np.vstack((graph, [i, j, s[i, j], self.adj_mat[i, j]]))
+        graph = graph[1:, ]
+        graph = graph[np.lexsort((-graph[:, 2], graph[:, 3]))]  # sorts by mutation number, then confidence
+        graph = self.kruskal(graph)
+        self.mst = np.zeros((s.shape[0], s.shape[1]))
+        for edge in graph:
+            self.mst[edge[0].astype(int), edge[1].astype(int)] = edge[2]
+    def kruskal(self, edges):
+        vertices = set()
+        for edge in edges:
+            vertices.add(edge[1])
+            vertices.add(edge[2])
+        mst = []
+        union_find = Kruskal_UnionFind(vertices)
+
+        for edge in edges:
+            u = edge[0]
+            v = edge[1]
+            root_u = union_find.find(u)
+            root_v = union_find.find(v)
+
+            if root_u != root_v:
+                mst.append(edge)
+                union_find.union(root_u, root_v)
+
+        return mst
 
     #performs mst resampling
     def _resample_mst(self):
